@@ -7,12 +7,16 @@ use IO::Socket::INET;
 use Apache2::Log;
 use Apache2::RequestRec ();
 use Apache2::Connection ();
+use Redis::Client;
 
 use Apache2::Const -compile => qw(FORBIDDEN OK :log);
 
+my $redis;
+
 BEGIN {
 mkdir "/var/www/bad_ips";
-chmod 0777, "/var/www/bad_ips"
+chmod 0777, "/var/www/bad_ips";
+$redis = Redis::Client->new(host=>'localhost', port=>6379);
 }
 
 my $ipstor = "/var/www/bad_ips";
@@ -39,15 +43,19 @@ sub handler {
 		$r->unparsed_uri() =~ /phpMyAdmin/ ) {
 		#$r->log_error("BAD IP: $str");
 		$sock->send( "hacker.unparsed_uri." . $r->unparsed_uri() . ":1|c\n" ) if defined $sock;
-		my $fh = FileHandle->new( "> $ipstor/$str");
-		if (defined $fh) {
-			print $fh time();
-			$fh->close;
-		}
+
+		#my $fh = FileHandle->new( "> $ipstor/$str");
+		#if (defined $fh) {
+		#	print $fh time();
+		#	$fh->close;
+		#}
+
+		$redis->hincrby( 'badips', $str, 1 );
 	}
 	
 	# check the block list
-	if (-e "$ipstor/$str") {
+	#if (-e "$ipstor/$str") {
+	if ($redis->hexists( 'badips', $str )) {
 		$sock->send( "request.blocked:1|c\n" ) if defined $sock;
 		return Apache2::Const::FORBIDDEN;
 	} else {
