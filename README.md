@@ -10,7 +10,7 @@ bad requests and spend compute cycles to get to an error status.
 
 ## Somewhere in your Apache configuration
 
-'''apacheconf
-  PerlModule ModPerl::DanHandler
-  PerlAccessHandler ModPerl::DanHandler
+'''
+PerlModule ModPerl::DanHandler
+PerlAccessHandler ModPerl::DanHandler
 '''
