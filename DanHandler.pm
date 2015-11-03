@@ -30,6 +30,7 @@ sub handler {
 	if ( $str =~ /71.165/ || 
 		$str =~ /192.168.0/  ||
 		$str =~ /130.76/  ||
+		$str =~ /71.108.37/ ||
 		$str =~ /108.0/
 		) {
 		return Apache2::Const::OK;
