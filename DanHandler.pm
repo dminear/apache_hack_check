@@ -10,7 +10,7 @@ use Apache2::Connection ();
 use Redis;
 use Apache2::Const -compile => qw(FORBIDDEN OK :log);
 
-my $pw = '123qwe!@#QWE';
+my $pw = $ENV{"REDIS_PW"};
 my $redis = Redis->new(	host=>'localhost',
 				port=>6379,
 				password => $pw );
@@ -35,7 +35,13 @@ sub handler {
 		) {
 		return Apache2::Const::OK;
 	}
-
+	
+	if (! defined $redis) {		# try to connect
+		$redis = Redis->new(	host=>'localhost',
+					port=>6379,
+					password => $pw );
+	}
+	
 	# check the block list to get out as soon as possible if there
 	if (defined $redis && $redis->hexists( 'badips', $str )) {
 		$sock->send( "request.blocked:1|c\n" ) if defined $sock;
