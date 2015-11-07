@@ -11,9 +11,12 @@ use Redis;
 use Apache2::Const -compile => qw(FORBIDDEN OK :log);
 
 my $pw = $ENV{"REDIS_PW"};
+
 my $redis = Redis->new(	host=>'localhost',
 				port=>6379,
-				password => $pw );
+				password => $pw,
+				reconnect=>60,
+				every=>5000 );
 
 # statsd socket
 my $sock = IO::Socket::INET->new(	PeerPort => 8125,
@@ -35,11 +38,14 @@ sub handler {
 		) {
 		return Apache2::Const::OK;
 	}
-	
+
+	# in case redis was not up when apache started, try to connect
 	if (! defined $redis) {		# try to connect
 		$redis = Redis->new(	host=>'localhost',
 					port=>6379,
-					password => $pw );
+					password => $pw,
+					reconnect=>60,
+					every=>5000 );
 	}
 	
 	# check the block list to get out as soon as possible if there

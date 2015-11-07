@@ -11,6 +11,7 @@ rejected at the beginning of the request cycle.
 ## Somewhere in your Apache configuration
 
 ```
+PerlSetEnv REDIS_PW 'somepassword'
 PerlModule ModPerl::DanHandler
 PerlAccessHandler ModPerl::DanHandler
 ```
