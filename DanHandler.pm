@@ -17,6 +17,9 @@ my $redis = Redis->new(	host=>'localhost',
 				password => $pw,
 				reconnect=>60,
 				every=>5000 );
+if ($redis) {
+	$redis->select(10);
+}
 
 # statsd socket
 my $sock = IO::Socket::INET->new(	PeerPort => 8125,
@@ -30,11 +33,11 @@ sub handler {
 	my $rlog = $r->log;
 
 	# let these IPs through anytime
-	if ( $str =~ /71.165/ || 
+	if ( 
 		$str =~ /192.168.0/  ||
 		$str =~ /130.76/  ||
 		$str =~ /71.108.37/ ||
-		$str =~ /108.0/
+		0
 		) {
 		return Apache2::Const::OK;
 	}
@@ -46,10 +49,13 @@ sub handler {
 					password => $pw,
 					reconnect=>60,
 					every=>5000 );
+		if ($redis) {
+			$redis->select(10);
+		}
 	}
 	
 	# check the block list to get out as soon as possible if there
-	if (defined $redis && $redis->hexists( 'badips', $str )) {
+	if (defined $redis && $redis->get( 'badip.' . $str )) {
 		$sock->send( "request.blocked:1|c\n" ) if defined $sock;
 		$rlog->notice("Bad IP ", $str, " blocked");
 		return Apache2::Const::FORBIDDEN;
@@ -66,9 +72,11 @@ sub handler {
 		$r->unparsed_uri() =~ /phpMyAdmin/ ) {
 		$sock->send( "hacker.unparsed_uri." . $r->unparsed_uri() . ":1|c\n" ) if defined $sock;
 		if ($redis) {
-			$rlog->notice("Bad IP ", $str, " putting in redis");
+			my $key = 'badip.' . $str;
+			$rlog->notice("putting $key in redis");
 			$redis->auth($pw);
-			$redis->hincrby( 'badips', $str, 1 );
+			my $val = localtime(time); # need scalar version of localtime
+			$redis->set( $key, $val, 'EX', 3600 );
 		}
 		return Apache2::Const::FORBIDDEN;
 	}
