@@ -36,7 +36,7 @@ sub handler {
 	if ( 
 		$str =~ /192.168.0/  ||
 		$str =~ /130.76/  ||
-		$str =~ /71.108.37/ ||
+		$str =~ /47.151.16/ ||
 		0
 		) {
 		return Apache2::Const::OK;
@@ -57,7 +57,7 @@ sub handler {
 	# check the block list to get out as soon as possible if there
 	if (defined $redis && $redis->get( 'badip.' . $str )) {
 		$sock->send( "request.blocked:1|c\n" ) if defined $sock;
-		$rlog->notice("Bad IP ", $str, " blocked");
+		#$rlog->notice("Bad IP ", $str, " blocked");
 		return Apache2::Const::FORBIDDEN;
 	}
 
@@ -73,10 +73,11 @@ sub handler {
 		$sock->send( "hacker.unparsed_uri." . $r->unparsed_uri() . ":1|c\n" ) if defined $sock;
 		if ($redis) {
 			my $key = 'badip.' . $str;
-			$rlog->notice("putting $key in redis");
+			#$rlog->notice("putting $key in redis");
 			$redis->auth($pw);
 			my $val = localtime(time); # need scalar version of localtime
-			$redis->set( $key, $val, 'EX', 3600 );
+			$redis->set( $key, $val, 'EX', 24*3600 );
+			$sock->send( "request.blocked:1|c\n" ) if defined $sock;
 		}
 		return Apache2::Const::FORBIDDEN;
 	}
