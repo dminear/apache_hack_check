@@ -31,10 +31,17 @@ $redis->expire( 'badips_country', 60*60*24*30 );
 #closedir $dh;
 
 my @ips = $redis->keys( 'badip.*' );
+
+foreach (@ips) {
+  /.*(\d+\.\d+\.\d+\.\d+)/;
+  $_ = $1;
+}
+
 print Dumper( \@ips ) if $debug;
 print "There are " . @ips . " bad IP addresses.\n" if $debug;
 my $countries = {};
 
+=comment
 foreach (@ips) {
 	/badip.(.*)$/;
 	$_ = $1;
@@ -63,6 +70,8 @@ foreach (@ips) {
 			print Dumper( \$j ) if $debug;
 			$redis->hset('badips_country', $_, $j );
 		}
+=cut
+
 # data format looks like:
 # $c = [
 #          'Country: CHINA (CN)
@@ -82,12 +91,14 @@ foreach (@ips) {
 		$country = $c->{"Country"};
 =cut
 
+=comment
 		$countries->{$c->{"Country"}}++;
 	} else {
 		warn "bad ip $_\n";
 	}
 }
-
+=cut
+=comment
 # now output the country counts
 print "BAD IPS PER COUNTRY\nCOUNTRY\tCOUNT\n";
 foreach (sort keys %$countries) {
@@ -95,6 +106,8 @@ foreach (sort keys %$countries) {
 	print $countries->{$_} . "\t$_\n";
 }
 
+
+=cut
 
 =comment
 			my $fh = FileHandle->new("> processed/$_") || die "cannot write file: $!\n";

@@ -37,6 +37,8 @@ sub handler {
 		$str =~ /192.168.0/  ||
 		$str =~ /130.76/  ||
 		$str =~ /47.151.16/ ||
+		$str =~ /75.82/ ||
+		$str =~ /23.243.136/ ||
 		0
 		) {
 		return Apache2::Const::OK;
