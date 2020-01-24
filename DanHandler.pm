@@ -36,9 +36,12 @@ sub handler {
 	if ( 
 		$str =~ /192.168.0/  ||
 		$str =~ /130.76/  ||
+		$str =~ /47.151.7/ ||
 		$str =~ /47.151.16/ ||
-		$str =~ /75.82/ ||
-		$str =~ /23.243.136/ ||
+		#$str =~ /75.82/ ||
+		#$str =~ /23.243.136/ ||
+		#$str =~ /162.158.58/ ||
+		#$str =~ /172.68.47/ ||
 		0
 		) {
 		return Apache2::Const::OK;
@@ -56,11 +59,31 @@ sub handler {
 		}
 	}
 	
+	# changed to not check the IP -- let the cloudflare caching work
+
+=comment 
 	# check the block list to get out as soon as possible if there
 	if (defined $redis && $redis->get( 'badip.' . $str )) {
 		$sock->send( "request.blocked:1|c\n" ) if defined $sock;
 		#$rlog->notice("Bad IP ", $str, " blocked");
 		return Apache2::Const::FORBIDDEN;
+	}
+=cut
+
+	my $hostname = $r->hostname();
+
+	#$rlog->notice("---hostname is ", $r->hostname() );
+
+	#let these hosts go through
+	if ($hostname =~ /blog.aududu.com/ 
+		|| $hostname =~ /scrappintwins.com/ 
+		|| $hostname =~ /cindyminearphotography.com/ )
+	 {
+		$sock->send( "request.allowed:1|c\n" ) if defined $sock;
+		my $name = $r->hostname();
+		$name =~ tr/./-/;
+		$sock->send( "request.hostname." . $name . ":1|c\n" ) if defined $sock;
+		return Apache2::Const::OK;
 	}
 
 	# if there is an attempt to access "zencart/admin" or other attempts, 
@@ -70,15 +93,16 @@ sub handler {
 		$r->unparsed_uri() =~ /phpbb2/i  ||
 		$r->unparsed_uri() =~ /wp-login/  ||
 		$r->unparsed_uri() =~ /xmlrpc.php/  ||
-		$r->unparsed_uri() =~ /wordpress\/xmlrpc.php/  ||
 		$r->unparsed_uri() =~ /phpMyAdmin/ ) {
-		$sock->send( "hacker.unparsed_uri." . $r->unparsed_uri() . ":1|c\n" ) if defined $sock;
+		#$sock->send( "hacker.unparsed_uri." . $r->unparsed_uri() . ":1|c\n" ) if defined $sock;
 		if ($redis) {
 			my $key = 'badip.' . $str;
 			#$rlog->notice("putting $key in redis");
 			$redis->auth($pw);
-			my $val = localtime(time); # need scalar version of localtime
-			$redis->set( $key, $val, 'EX', 24*3600 );
+			$redis->incr( $key );
+			$redis->expire( $key, 86400 );	# 1 day
+			#my $val = localtime(time); # need scalar version of localtime
+			#$redis->set( $key, $val, 'EX', 24*3600 );
 			$sock->send( "request.blocked:1|c\n" ) if defined $sock;
 		}
 		return Apache2::Const::FORBIDDEN;

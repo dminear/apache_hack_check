@@ -24,7 +24,13 @@ print $q->header,                    # create the HTTP header
 			$q->a({href=>"http://landweb.nascom.nasa.gov/browse/calendar.html"}, "$daynum"),
 			" - past 24 hours"),         # level 1 header
 	$q->div( {-id=>"pic" }, $q->img( {-class=>"request", -src=>""} ),
-				$q->img( {-class=>"io", -src=>""}));
+				$q->img( {-class=>"io", -src=>""}),
+				$q->img( {-class=>"aududu", -src=>""})
+		);
+
+
+
+
 	#$q->a( {-href=>""}, 'Link' ),
 	#my $badips = `ls -1 /var/www/bad_ips/ | wc -l`;
 	my $badips = $redis->keys( 'badip.*' );
